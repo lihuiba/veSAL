@@ -1,0 +1,7 @@
+build/
+.cache
+include/vesal/vesal_version.h
+perf_simple
+
+third/byte
+third/benchmark
