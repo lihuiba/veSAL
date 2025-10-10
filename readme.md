@@ -3,9 +3,18 @@ veSAL目前包含三大组件：
 - Codec：压缩/解压缩模块，支持lz4、zstd、deflate、zlib算法卸载
 - Cypher：加解密模块，支持AES-XTS和Sha256两种算法卸载
 - DataFlow：数据流模块，支持CRC和MemMove卸载
+
 目前已在火山引擎高性能存储中集成使用，在节省了大量CPU资源的情况下，获得了显著的性能提升。
 
 ### Prerequisites
+#### 环境要求
+理论上不要求特定的OS版本，但是建议使用>=5.4版本的debian系统，我们在该环境做了大量验证。另外，由于需要与硬件交互的能力，需要打开iommu的能力：
+```bash
+# cat /proc/cmdline
+iommu=pt intel_iommu=on,sm_on # 请确保这些参数已打开。
+```
+且veSAL依赖大页，请确保1GB或2MB大页可用。
+
 #### Codec & Cypher
 压缩/解压缩，加密/解密/哈希在存储场景是一个非常常见的操作逻辑，耗费大量的CPU资源。vesal提出基于QAT进行压缩/解压缩/加密/解密/哈希的卸载方案，并支持对压缩前/后的数据随路计算CRC，大大节省业务的CPU资源。
 确认您的机型是否支持QAT：
@@ -30,11 +39,30 @@ f2:01.0 System peripheral: Intel Corporation Device 0b25
 DSA不需要专门的kernel module，但是需要对硬件资源做一次初始化。该步骤需要先执行编译，请看后文。
 
 ### 编译方式
-确保至少已安装cmake 3.20后，且可以访问互联网，执行：
+首先安装以下通用依赖：
+```bash
+cmake autoconf valgrind libnuma-dev libunwind-dev
+```
+之后执行：
 ```bash
 ./build.sh
 ```
-该命令会下载依赖并执行编译，编译产物将存放于build目录下。
+该命令会下载第三方库依赖并执行编译，具体可见`get-deps.py`脚本
+```python
+REPOS = {
+    "https://github.com/gflags/gflags.git": "v2.2.2",
+    "https://github.com/google/googletest.git": "release-1.11.0",
+    "https://github.com/gperftools/gperftools.git": "gperftools-2.12",
+    "https://github.com/ebiggers/libdeflate.git": "v1.23",
+    "https://github.com/lz4/lz4.git": "v1.9.3",
+    "https://github.com/gabime/spdlog.git": "v1.8.2",
+    "https://github.com/facebook/zstd.git": "v1.5.5",
+    "https://github.com/madler/zlib.git": "v1.3.1",
+    "https://github.com/openssl/openssl.git": "OpenSSL_1_0_1-stable",
+    "https://github.com/skarupke/flat_hash_map.git": "master"
+}
+```
+编译产物将存放于build目录下。
 
 ### 项目集成
 ```cmake
