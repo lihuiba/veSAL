@@ -52,6 +52,12 @@ Status ValidateChannelOption(const CodecChannelOption& opts) {
         opts.checksum_type == CodecChecksumType::kNum || opts.comp_level == CodecCompLevel::kNum) {
         return InvalidArgumentError("Invalid channel option.");
     }
+    if (opts.poll_mode == CodecPollMode::kNum) {
+        return InvalidArgumentError("Invalid poll mode.");
+    }
+    if (opts.poll_mode == CodecPollMode::kEpoll && opts.engine_type != CodecEngineType::kQat) {
+        return InvalidArgumentError("EPOLL poll mode is only supported with QAT engine.");
+    }
     return OkStatus();
 }
 

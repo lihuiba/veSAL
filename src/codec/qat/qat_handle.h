@@ -55,6 +55,10 @@ public:
         return unit_;
     }
 
+    int GetFileDescriptor() const {
+        return !unit_ ? -1 : unit_->GetFileDescriptor();
+    }
+
 private:
     // Close session for max 1ms. Return the close result.
     StatusCode TryCloseSession();

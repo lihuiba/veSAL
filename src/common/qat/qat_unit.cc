@@ -182,6 +182,22 @@ Status QatUnit::Start() {
         return CpaStatusToVesalStatus(cpa_st, "Fail to cpaDcStartInstance");
     }
 
+    // In EPOLL mode (is_polled == false), obtain the file descriptor for event-driven notification.
+    if (!qat_unit_attr_.is_polled) {
+        int fd = -1;
+        CpaStatus fd_st = GetQatApiWrapper()->QAT_icp_sal_DcGetFileDescriptor(
+            cpa_instance_handle_, &fd);
+        if (fd_st == CPA_STATUS_SUCCESS) {
+            qat_unit_attr_.fd = fd;
+            VESAL_LOG(INFO) << "QAT EPOLL fd obtained: " << fd
+                            << " for device_id=" << qat_unit_attr_.device_id;
+        } else {
+            VESAL_LOG(ERROR) << "Failed to get QAT EPOLL fd, status=" << fd_st
+                             << " for device_id=" << qat_unit_attr_.device_id;
+            qat_unit_attr_.fd = -1;
+        }
+    }
+
     VESAL_LOG(DEBUG) << "QAT device_id=" << qat_unit_attr_.device_id
                      << " started, SVM enbaled: " << SvmEnabled();
 
@@ -189,6 +205,16 @@ Status QatUnit::Start() {
 }
 
 Status QatUnit::Stop() {
+    // Release the EPOLL file descriptor if held.
+    if (qat_unit_attr_.fd >= 0) {
+        CpaStatus fd_st = GetQatApiWrapper()->QAT_icp_sal_DcPutFileDescriptor(
+            cpa_instance_handle_, qat_unit_attr_.fd);
+        if (fd_st != CPA_STATUS_SUCCESS) {
+            VESAL_LOG(WARN) << "Failed to put QAT EPOLL fd=" << qat_unit_attr_.fd
+                            << ", status=" << fd_st;
+        }
+        qat_unit_attr_.fd = -1;
+    }
     auto StopInstance = unit_type_ == UnitType::kDc ? &QatHardwareApiWrapper::QAT_cpaDcStopInstance
                                                     : &QatHardwareApiWrapper::QAT_cpaCyStopInstance;
     CpaStatus cpa_st = (GetQatApiWrapper()->*StopInstance)(cpa_instance_handle_);

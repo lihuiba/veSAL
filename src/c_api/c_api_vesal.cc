@@ -218,6 +218,7 @@ void default_vesal_codec_channel_options(vesal_codec_channel_options_t* opts) {
     opts->compressed_checksum = VESAL_TRUE;
     opts->node_affinity = -1;
     opts->timeout_ms = 3000;
+    opts->poll_mode = VESAL_CODEC_POLL_MODE_POLLED;
 }
 
 VESAL_ERROR_CODE vesal_create_codec_channel(vesal_codec_channel_options_t* opts,
@@ -233,6 +234,7 @@ VESAL_ERROR_CODE vesal_create_codec_channel(vesal_codec_channel_options_t* opts,
     internal_opts.compressed_checksum = static_cast<bool>(opts->compressed_checksum);
     internal_opts.allocation_option.node_affinity = opts->node_affinity;
     internal_opts.timeout_ms = opts->timeout_ms;
+    internal_opts.poll_mode = static_cast<vesal::CodecPollMode>(opts->poll_mode);
     auto r = vesal::CodecChannel::CreateCodecChannel(internal_opts);
     if (!r.first.ok()) {
         return static_cast<VESAL_ERROR_CODE>(r.first.code());
@@ -341,4 +343,12 @@ ssize_t vesal_codec_poll(VesalCodecChannelHandle handle,
     // For performance reason we treat two types has the same layout to avoid memcpy.
     auto* cxx_results = reinterpret_cast<vesal::CodecResult*>(result);
     return chnnl->Poll(cxx_results, result_num, timeout);
+}
+
+int vesal_codec_get_fd(VesalCodecChannelHandle handle) {
+    auto* chnnl = reinterpret_cast<vesal::CodecChannel*>(handle);
+    if (chnnl == nullptr) {
+        return -1;
+    }
+    return chnnl->GetFileDescriptor();
 }

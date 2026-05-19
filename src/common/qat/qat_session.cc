@@ -303,9 +303,27 @@ bool QatSession::CheckCapabilities(const QatSessionOption& opt) {
     QatUnitAttr attr = qat_unit_->GetQatUnitAttr();
 
     if (!attr.is_polled) {
-        VESAL_LOG(ERROR)
-            << "Vesal only supports Polling mode of QAT. Please check the QAT driver config.";
-        return false;
+        // EPOLL mode instance. Only accept if the channel requests EPOLL mode.
+        if (opt.codec_chann_opt.poll_mode != CodecPollMode::kEpoll) {
+            VESAL_LOG(ERROR)
+                << "QAT instance is in EPOLL mode but channel requests Polled mode. "
+                << "Please set poll_mode to kEpoll in CodecChannelOption.";
+            return false;
+        }
+        // Verify that the fd was obtained successfully.
+        if (attr.fd < 0) {
+            VESAL_LOG(ERROR) << "QAT instance is in EPOLL mode but fd is invalid (fd=" << attr.fd
+                             << ").";
+            return false;
+        }
+    } else {
+        // Polled mode instance. Reject if channel requests EPOLL mode.
+        if (opt.codec_chann_opt.poll_mode == CodecPollMode::kEpoll) {
+            VESAL_LOG(ERROR)
+                << "QAT instance is in Polled mode but channel requests EPOLL mode. "
+                << "Please configure QAT driver in EPOLL mode or use kPolled poll_mode.";
+            return false;
+        }
     }
 
     if (opt.type == QatSessionType::kCypher) {

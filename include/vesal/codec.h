@@ -92,6 +92,8 @@ enum class CodecChecksumType : uint8_t { kNone = 1, kCrc32, kNum };
 
 enum class ChannelMode : uint8_t { kDedicated = 1, kShared, kNum };
 
+enum class CodecPollMode : uint8_t { kPolled = 1, kEpoll, kNum };
+
 struct ChannelAllocationOption {
     int node_affinity{-1};  // if >= 0, will try to allocate hardware resources with the specified
                             // node; random if == -1
@@ -122,6 +124,8 @@ struct CodecChannelOption {
     ChannelAllocationOption allocation_option;
     bool sw_backup{false};      // if true, fallback to the software path when the result failed
     uint64_t timeout_ms{3000};  // timeout for per compress or decompress request
+    enum CodecPollMode poll_mode{CodecPollMode::kPolled};  // kPolled: busy-poll mode (default),
+                                                           // kEpoll: event-driven mode via fd
 
     friend std::ostream& operator<<(std::ostream& os, const CodecChannelOption& opt);
 
@@ -410,6 +414,16 @@ public:
      * - UNKNOWN Internal system error
      */
     virtual Status Close() = 0;
+
+    /**
+     * @brief Get the file descriptor for epoll-based notification.
+     * Only valid when CodecChannelOption::poll_mode is kEpoll.
+     * After HA events, the fd may change; caller should re-query.
+     *
+     * @return The file descriptor, or -1 if epoll mode is not active or
+     *         not supported by this channel type.
+     */
+    virtual int GetFileDescriptor() const { return -1; }
 };
 
 }  // namespace vesal

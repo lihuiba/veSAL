@@ -174,6 +174,12 @@ typedef enum {
     VESAL_HA_POLICY_NUM
 } VESAL_HA_POLICY;
 
+typedef enum {
+    VESAL_CODEC_POLL_MODE_POLLED = 1,  // default
+    VESAL_CODEC_POLL_MODE_EPOLL,
+    VESAL_CODEC_POLL_MODE_NUM
+} VESAL_CODEC_POLL_MODE;
+
 typedef int VESAL_CODEC_COMP_LEVEL;
 #define VESAL_CODEC_COMP_LEVEL_FASTEST 1
 #define VESAL_CODEC_COMP_LEVEL_DEFAULT 4
@@ -190,6 +196,7 @@ typedef struct _vesal_codec_channel_options_t {
     VESAL_BOOL compressed_checksum;           // default: VESAL_TRUE
     int node_affinity;                        // default: -1
     int timeout_ms;                           // default: 3000
+    VESAL_CODEC_POLL_MODE poll_mode;          // default: VESAL_CODEC_POLL_MODE_POLLED
 } vesal_codec_channel_options_t;
 // default_vesal_codec_channel_options() will give default values to all options:
 void default_vesal_codec_channel_options(vesal_codec_channel_options_t* opts);
@@ -245,6 +252,15 @@ ssize_t vesal_codec_poll(VesalCodecChannelHandle handle,
                          vesal_codec_result_t result[],
                          unsigned int result_num,
                          int timeout);
+
+/**
+ * Get the file descriptor for epoll-based notification.
+ * Only valid when poll_mode is VESAL_CODEC_POLL_MODE_EPOLL.
+ * After HA events, the fd may change; caller should re-query.
+ *
+ * @return File descriptor, or -1 if not in epoll mode or not supported.
+ */
+int vesal_codec_get_fd(VesalCodecChannelHandle handle);
 
 // Cypher api below
 typedef enum {

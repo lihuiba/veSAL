@@ -90,6 +90,10 @@ public:
         return worker_->GetQatUnit()->GetDeviceId();
     }
 
+    int GetFileDescriptor() const {
+        return worker_->GetFileDescriptor();
+    }
+
 private:
     void HandleQueueFinCb(size_t num);
 

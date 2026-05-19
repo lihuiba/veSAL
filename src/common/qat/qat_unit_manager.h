@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "common/qat/qat_unit.h"
+#include "vesal/codec.h"
 #include "vesal/status.h"
 #include "vesal/vesal.h"
 
@@ -40,6 +41,7 @@ struct QatUnitSelection {
     int pf_id;
     int vf_id;
     int inst_id;
+    CodecPollMode poll_mode{CodecPollMode::kPolled};
 
     QatUnitSelection() : numa_id(-1), pf_id(-1), vf_id(-1), inst_id(-1) {}
 };
@@ -67,7 +69,8 @@ public:
     // return the less busy one.
     QatUnit* GrabAvailableUnit(const QatUnitSelection& selection);
     //  Grab the unit but not from the same devices in the excluded_units.
-    QatUnit* GrabFromDiffDevice(const std::vector<QatUnit*>& excluded_units);
+    QatUnit* GrabFromDiffDevice(const std::vector<QatUnit*>& excluded_units,
+                                 CodecPollMode poll_mode = CodecPollMode::kPolled);
 
     void PutBackUnit(QatUnit* unit);
 

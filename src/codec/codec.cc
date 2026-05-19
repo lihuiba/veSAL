@@ -86,6 +86,7 @@ std::ostream& operator<<(std::ostream& os, const CodecChannelOption& opt) {
               << ", checksum_type=" << static_cast<int>(opt.checksum_type)
               << ", compressed_checksum=" << opt.compressed_checksum
               << ", allocation_option.node_affinity=" << opt.allocation_option.node_affinity
+              << ", poll_mode=" << static_cast<int>(opt.poll_mode)
               << ", timeout_ms=" << opt.timeout_ms;
 }
 
@@ -98,15 +99,17 @@ bool CodecChannelOption::operator<(const CodecChannelOption& rhs) const {
                     compressed_checksum,
                     allocation_option.node_affinity,
                     sw_backup,
+                    poll_mode,
                     timeout_ms) < std::tie(rhs.user_cb,
-                                           rhs.ha_policy,
-                                           rhs.comp_algorithm,
-                                           rhs.comp_level,
-                                           rhs.checksum_type,
-                                           rhs.compressed_checksum,
-                                           rhs.allocation_option.node_affinity,
-                                           rhs.sw_backup,
-                                           rhs.timeout_ms);
+                                          rhs.ha_policy,
+                                          rhs.comp_algorithm,
+                                          rhs.comp_level,
+                                          rhs.checksum_type,
+                                          rhs.compressed_checksum,
+                                          rhs.allocation_option.node_affinity,
+                                          rhs.sw_backup,
+                                          rhs.poll_mode,
+                                          rhs.timeout_ms);
 }
 
 std::ostream& operator<<(std::ostream& os, const CodecResult& res) {

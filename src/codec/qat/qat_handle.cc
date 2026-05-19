@@ -30,6 +30,7 @@ Status QatHandle::Init() {
     QatUnitSelection selection;
     selection.numa_id = channel_opts_.allocation_option.node_affinity;
     selection.pf_id = channel_opts_.allocation_option.device_id;
+    selection.poll_mode = channel_opts_.poll_mode;
     unit_ = unit_manager_->GrabAvailableUnit(selection);
     if (unit_ == nullptr) {
         return ResourceBusyError("No available QAT unit.");
@@ -88,7 +89,7 @@ StatusCode QatHandle::Reinit() {
     unit_ = nullptr;
     QatSessionOption sess_opts(channel_opts_);
     do {
-        unit_ = unit_manager_->GrabFromDiffDevice(discarded_units_);
+        unit_ = unit_manager_->GrabFromDiffDevice(discarded_units_, channel_opts_.poll_mode);
         if (unit_ != nullptr) {
             session_ = std::make_unique<QatSession>(unit_);
             Status sess_init_r = session_->Init(sess_opts, Callback);

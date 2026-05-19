@@ -108,16 +108,22 @@ QatUnit* QatUnitManager::GrabAvailableUnit(const QatUnitSelection& selection) {
     return ret;
 }
 
-QatUnit* QatUnitManager::GrabFromDiffDevice(const std::vector<QatUnit*>& excluded_units) {
+QatUnit* QatUnitManager::GrabFromDiffDevice(const std::vector<QatUnit*>& excluded_units,
+                                             CodecPollMode poll_mode) {
     std::lock_guard<std::mutex> lg(mtx_);
     QatUnit* ret = nullptr;
     int pf_id_cnt = -1;
     for (auto& each_unit : all_units_) {
         int pf_id = each_unit->GetDeviceId();
+        QatUnitAttr attr = each_unit->GetQatUnitAttr();
         //  1. Usable
         //  2. Not from the same device
-        //  3. Less busy
-        if (each_unit->Usable() &&
+        //  3. Matches poll mode
+        //  4. Less busy
+        bool poll_mode_ok = (poll_mode == CodecPollMode::kEpoll)
+                                ? (!attr.is_polled && each_unit->GetFileDescriptor() >= 0)
+                                : attr.is_polled;
+        if (each_unit->Usable() && poll_mode_ok &&
             std::find_if(excluded_units.begin(),
                          excluded_units.end(),
                          [pf_id](QatUnit* u) { return u->GetDeviceId() == pf_id; }) ==
@@ -179,6 +185,13 @@ bool QatUnitManager::FitSelection(const QatUnitSelection& selection, QatUnit* un
     ret &= selection.pf_id < 0 || selection.pf_id == unit->GetDeviceId();
     ret &= selection.vf_id < 0 || selection.vf_id == unit->GetFunctionId();
     ret &= selection.inst_id < 0 || selection.inst_id == unit->GetInstId();
+    // Poll mode filter: EPOLL mode channels need EPOLL instances, Polled mode channels need Polled instances
+    QatUnitAttr attr = unit->GetQatUnitAttr();
+    if (selection.poll_mode == CodecPollMode::kEpoll) {
+        ret &= !attr.is_polled && unit->GetFileDescriptor() >= 0;
+    } else {
+        ret &= attr.is_polled;
+    }
     return ret;
 }
 

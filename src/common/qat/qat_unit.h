@@ -66,6 +66,7 @@ struct QatUnitAttr {
     uint32_t inst_id;      // CpaInstanceInfo2.instID. E.g, for Dc0, inst_id is 0.
     int32_t numa_hint;
     bool is_polled;
+    int fd{-1};  // Valid only in EPOLL mode (is_polled == false), -1 otherwise
     // Calc crc for input source data in compress direction,
     // and calc crc for output data in decompress direction.
     bool is_crc_supp;
@@ -108,6 +109,10 @@ public:
 
     int GetInstId() const {
         return qat_unit_attr_.inst_id;
+    }
+
+    int GetFileDescriptor() const {
+        return qat_unit_attr_.fd;
     }
 
     bool SvmEnabled() const {
@@ -201,6 +206,7 @@ inline std::ostream& operator<<(std::ostream& os, const QatUnit& unit) {
        << ", inst_id: " << unit.qat_unit_attr_.inst_id
        << ", numa_hint: " << unit.qat_unit_attr_.numa_hint
        << ", is_polled: " << unit.qat_unit_attr_.is_polled
+       << ", fd: " << unit.qat_unit_attr_.fd
        << ", is_crc_supp: " << unit.qat_unit_attr_.is_crc_supp
        << ", svm_disabled: " << unit.qat_unit_attr_.is_phys_contiguous_mem_required << std::dec
        << ", in_use_cnt: " << unit.ref_cnt_ << ", blacklisted: " << unit.blacklisted_

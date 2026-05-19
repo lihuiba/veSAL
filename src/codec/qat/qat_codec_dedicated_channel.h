@@ -89,6 +89,10 @@ public:
 
     Status Close() override;
 
+    int GetFileDescriptor() const override {
+        return qat_codec_engine_->GetFileDescriptor();
+    }
+
 private:
     bool Prepare(const std::vector<unsigned char*>& src,
                  const std::vector<unsigned int>& src_len,

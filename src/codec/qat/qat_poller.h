@@ -60,6 +60,7 @@ struct PollerTask {
 struct QatPollerWorkerInfo {
     std::unique_ptr<QatPollerWorker> worker;
     size_t ref_cnt{0};
+    int known_fd{-1};  // Track fd for epoll set management (HA fd change detection)
 };
 
 // An RTC poller. Contains several QatPollerWorkers. The typical usage is to call Start() and this
@@ -102,6 +103,8 @@ private:
 
     void ShutdownInternal();
 
+    void InitEpoll();
+
     size_t DrainTasks(size_t task_num);
 
     // Note this function is not thread-safe.
@@ -117,6 +120,10 @@ private:
         return workers_.size();
     }
 
+    void AddWorkerFdToEpoll(int fd);
+    void RemoveWorkerFdFromEpoll(int fd);
+    void UpdateEpollSetAfterLoop();
+
     std::map<CodecChannelOption, std::unique_ptr<QatPollerWorkerInfo>> workers_;
 
     std::thread poller_thread_;
@@ -125,6 +132,12 @@ private:
 
     int poller_id_{-1};
     bool running_{false};
+
+    // EPOLL support: when workers use EPOLL-mode QAT instances, the poller
+    // uses epoll_wait() instead of usleep() for efficient notification.
+    int epoll_fd_{-1};
+    int wakeup_fd_{-1};  // eventfd to wake up epoll_wait when new tasks arrive
+    bool has_epoll_workers_{false};
 
     uint32_t periodic_task_id_;
     // How many workers this poller has.

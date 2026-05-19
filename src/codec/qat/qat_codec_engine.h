@@ -119,6 +119,10 @@ public:
 
     QatUnit* GetQatUnit();
 
+    int GetFileDescriptor() const {
+        return !qat_handle_ ? -1 : qat_handle_->GetFileDescriptor();
+    }
+
 private:
     checksum32_t CompressedCRC32(const RequestCbContext* cb_ctx, const CodecDirection& dir);
 
